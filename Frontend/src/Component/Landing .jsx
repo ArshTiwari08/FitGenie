@@ -53,6 +53,7 @@ const FAQ = [
 ];
 
 const focus = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-400";
+const isAuth = (t) => t === "login" || t === "register";
 
 function Logo() {
     return (
@@ -63,10 +64,22 @@ function Logo() {
     );
 }
 
+/* ---------- Shared modal behaviour (Esc to close, lock scroll) ---------- */
+function useModalBehavior(onClose) {
+    useEffect(() => {
+        const onKey = (e) => e.key === "Escape" && onClose();
+        document.addEventListener("keydown", onKey);
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => {
+        document.removeEventListener("keydown", onKey);
+        document.body.style.overflow = prev;
+        };
+    }, [onClose]);
+}
 
-
-/* ---------- Popup content for each nav item ---------- */
-function PopupBody({ type }) {
+/* ---------- Info popup content ---------- */
+function PopupBody({ type, onAuth }) {
     const [openFaq, setOpenFaq] = useState(0);
 
     if (type === "features")
@@ -83,7 +96,7 @@ function PopupBody({ type }) {
     );
 
     if (type === "how")
-        return (
+    return (
         <ol className="grid gap-6 sm:grid-cols-2">
             {STEPS.map((s, i) => (
             <li key={s.title} className="border-t-2 border-lime-400/60 pt-4">
@@ -93,45 +106,45 @@ function PopupBody({ type }) {
             </li>
             ))}
         </ol>
-        );
+    );
 
     if (type === "goals")
-        return (
+    return (
         <div className="grid gap-4 sm:grid-cols-2">
             {GOALS.map((g) => (
-            <a key={g.name} href="/register" className={"group flex items-center justify-between rounded-2xl border border-white/10 p-5 transition hover:border-lime-400/50 hover:bg-lime-400/5 " + focus}>
+            <button key={g.name} onClick={() => onAuth("register")} className={"group flex items-center justify-between rounded-2xl border border-white/10 p-5 text-left transition hover:border-lime-400/50 hover:bg-lime-400/5 " + focus}>
                 <div>
                 <h3 className="text-lg font-semibold">{g.name}</h3>
                 <p className="mt-1 text-sm text-zinc-400">{g.text}</p>
                 </div>
                 <span className="ml-4 text-lime-400 transition group-hover:translate-x-1" aria-hidden="true">→</span>
-            </a>
+            </button>
             ))}
         </div>
-        );
+    );
 
-        if (type === "pricing")
-        return (
-            <div className="grid gap-4 lg:grid-cols-3">
-                {PLANS.map((p) => (
-                <div key={p.name} className={"flex flex-col rounded-2xl border p-6 " + (p.featured ? "border-lime-400 bg-lime-400/5" : "border-white/10 bg-white/[0.03]")}>
-                    <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">{p.name}</h3>
-                    {p.featured && <span className="rounded-full bg-lime-400 px-2.5 py-0.5 text-xs font-semibold text-black">Popular</span>}
-                    </div>
-                    <p className="mt-4"><span className="text-4xl font-extrabold">{p.price}</span> <span className="text-xs text-zinc-400">{p.note}</span></p>
-                    <ul className="mt-5 flex-1 space-y-2.5 text-sm text-zinc-300">
-                    {p.items.map((it) => (
-                        <li key={it} className="flex gap-2.5"><span className="text-lime-400" aria-hidden="true">✓</span>{it}</li>
-                    ))}
-                    </ul>
-                    <a href="/register" className={"mt-6 rounded-xl py-2.5 text-center text-sm font-semibold transition " + focus + (p.featured ? " bg-lime-400 text-black hover:bg-lime-300" : " border border-white/15 hover:bg-white/10")}>
-                    {p.cta}
-                    </a>
+    if (type === "pricing")
+    return (
+        <div className="grid gap-4 lg:grid-cols-3">
+            {PLANS.map((p) => (
+            <div key={p.name} className={"flex flex-col rounded-2xl border p-6 " + (p.featured ? "border-lime-400 bg-lime-400/5" : "border-white/10 bg-white/[0.03]")}>
+                <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">{p.name}</h3>
+                {p.featured && <span className="rounded-full bg-lime-400 px-2.5 py-0.5 text-xs font-semibold text-black">Popular</span>}
                 </div>
+                <p className="mt-4"><span className="text-4xl font-extrabold">{p.price}</span> <span className="text-xs text-zinc-400">{p.note}</span></p>
+                <ul className="mt-5 flex-1 space-y-2.5 text-sm text-zinc-300">
+                {p.items.map((it) => (
+                    <li key={it} className="flex gap-2.5"><span className="text-lime-400" aria-hidden="true">✓</span>{it}</li>
                 ))}
+                </ul>
+                <button onClick={() => onAuth("register")} className={"mt-6 rounded-xl py-2.5 text-center text-sm font-semibold transition " + focus + (p.featured ? " bg-lime-400 text-black hover:bg-lime-300" : " border border-white/15 hover:bg-white/10")}>
+                {p.cta}
+                </button>
             </div>
-        );
+            ))}
+        </div>
+    );
 
     return (
         <div className="divide-y divide-white/10 border-y border-white/10">
@@ -150,20 +163,11 @@ function PopupBody({ type }) {
         ))}
         </div>
     );
-    }
+}
 
-    /* ---------- Popup shell ---------- */
-    function Modal({ type, onClose, onSwitch }) {
-    useEffect(() => {
-        const onKey = (e) => e.key === "Escape" && onClose();
-        document.addEventListener("keydown", onKey);
-        const prev = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-        return () => {
-        document.removeEventListener("keydown", onKey);
-        document.body.style.overflow = prev;
-        };
-    }, [onClose]);
+/* ---------- Info popup shell ---------- */
+function Modal({ type, onClose, onSwitch }) {
+    useModalBehavior(onClose);
 
     return (
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose}>
@@ -174,13 +178,11 @@ function PopupBody({ type }) {
             onClick={(e) => e.stopPropagation()}
             className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-zinc-950 shadow-2xl sm:rounded-3xl"
         >
-            {/* Header */}
             <div className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5 sm:px-8">
             <h2 id="popup-title" className="text-xl font-bold tracking-tight sm:text-2xl">{TITLES[type]}</h2>
             <button onClick={onClose} aria-label="Close" className={"grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 text-zinc-400 transition hover:text-white " + focus}>✕</button>
             </div>
 
-            {/* Tabs to move between popups */}
             <div className="flex gap-2 overflow-x-auto border-b border-white/10 px-6 py-3 sm:px-8">
             {NAV.map((n) => (
                 <button
@@ -194,27 +196,177 @@ function PopupBody({ type }) {
             ))}
             </div>
 
-            {/* Body */}
             <div className="overflow-y-auto px-6 py-6 sm:px-8">
-            <PopupBody key={type} type={type} />
+            <PopupBody key={type} type={type} onAuth={onSwitch} />
             </div>
 
-            {/* Footer */}
             <div className="flex flex-col gap-3 border-t border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
             <p className="text-sm text-zinc-500">Ready to start? It takes about a minute.</p>
             <div className="flex gap-3">
-                <a href="/login" className={"rounded-xl border border-white/10 px-5 py-2.5 text-sm transition hover:bg-white/5 " + focus}>Log in</a>
-                <a href="/register" className={"rounded-xl bg-lime-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-lime-300 " + focus}>Register</a>
+                <button onClick={() => onSwitch("login")} className={"rounded-xl border border-white/10 px-5 py-2.5 text-sm transition hover:bg-white/5 " + focus}>Log in</button>
+                <button onClick={() => onSwitch("register")} className={"rounded-xl bg-lime-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-lime-300 " + focus}>Register</button>
             </div>
             </div>
         </div>
         </div>
     );
-    }
+}
 
-    function Landing() {
+/* ---------- Form field ---------- */
+function Field({ label, id, error, ...props }) {
+    return (
+        <div>
+        <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-zinc-300">{label}</label>
+        <input
+            id={id}
+            name={id}
+            {...props}
+            className={"w-full rounded-lg border bg-zinc-900 px-4 py-2.5 text-white placeholder-zinc-500 outline-none transition focus:ring-2 focus:ring-lime-400/60 " + (error ? "border-red-500" : "border-zinc-700 focus:border-lime-400")}
+        />
+        {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+        </div>
+    );
+}
+
+/* ---------- Login form ---------- */
+function LoginForm({ onSwitch }) {
+    const [form, setForm] = useState({ identifier: "", password: "", remember: false });
+    const [errors, setErrors] = useState({});
+    const [done, setDone] = useState(false);
+
+    const change = (e) => {
+        const { name, value, type, checked } = e.target;
+        setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    };
+
+    const submit = (e) => {
+        e.preventDefault();
+        const er = {};
+        if (!form.identifier.trim()) er.identifier = "Enter your email or username.";
+        if (!form.password) er.password = "Enter your password.";
+        setErrors(er);
+        if (!Object.keys(er).length) {
+        setDone(true);
+        // TODO: call your login API with `form`
+        console.log("Login payload:", form);
+        }
+    };
+
+    if (done)
+    return <div className="rounded-lg border border-lime-400/50 bg-lime-400/10 p-4 text-lime-300">You're logged in. Welcome back!</div>;
+
+    return (
+        <form onSubmit={submit} noValidate className="space-y-4">
+        <Field label="Email or username" id="identifier" type="text" placeholder="alex@example.com" value={form.identifier} onChange={change} error={errors.identifier} />
+        <Field label="Password" id="password" type="password" placeholder="Your password" value={form.password} onChange={change} error={errors.password} />
+        <div className="flex items-center justify-between text-sm">
+            <label className="flex cursor-pointer items-center gap-2 text-zinc-300">
+            <input type="checkbox" name="remember" checked={form.remember} onChange={change} className="h-4 w-4 cursor-pointer accent-lime-400" />
+            Remember me
+            </label>
+            <a href="/forgot-password" className="text-lime-400 hover:underline">Forgot password?</a>
+        </div>
+        <button type="submit" className={"w-full rounded-lg bg-lime-400 py-3 font-bold text-black shadow-[0_0_20px_rgba(163,230,53,0.3)] transition hover:bg-lime-300 " + focus}>Log in</button>
+        <p className="text-center text-sm text-zinc-400">
+            New to FitGenie?{" "}
+            <button type="button" onClick={() => onSwitch("register")} className="font-semibold text-lime-400 hover:underline">Create an account</button>
+        </p>
+        </form>
+    );
+}
+
+/* ---------- Register form ---------- */
+function RegisterForm({ onSwitch }) {
+    const [form, setForm] = useState({ fullName: "", username: "", email: "", password: "", confirmPassword: "", agree: false });
+    const [errors, setErrors] = useState({});
+    const [done, setDone] = useState(false);
+
+    const change = (e) => {
+        const { name, value, type, checked } = e.target;
+        setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    };
+
+    const submit = (ev) => {
+        ev.preventDefault();
+        const er = {};
+        if (!form.fullName.trim()) er.fullName = "Enter your full name.";
+        if (!/^[a-zA-Z0-9_]{3,}$/.test(form.username)) er.username = "Use 3+ letters, numbers or underscores.";
+        if (!/^\S+@\S+\.\S+$/.test(form.email)) er.email = "Enter a valid email address.";
+        if (form.password.length < 8) er.password = "Password must be at least 8 characters.";
+        if (form.confirmPassword !== form.password) er.confirmPassword = "Passwords do not match.";
+        if (!form.agree) er.agree = "You must accept the terms and conditions.";
+        setErrors(er);
+        if (!Object.keys(er).length) {
+        setDone(true);
+        // TODO: call your register API with `form`
+        console.log("Register payload:", form);
+        }
+    };
+
+    if (done)
+    return <div className="rounded-lg border border-lime-400/50 bg-lime-400/10 p-4 text-lime-300">Account created. Welcome to FitGenie!</div>;
+
+    return (
+        <form onSubmit={submit} noValidate className="space-y-4">
+        <Field label="Full name" id="fullName" type="text" placeholder="Alex Johnson" value={form.fullName} onChange={change} error={errors.fullName} />
+        <Field label="Username" id="username" type="text" placeholder="alex_fit" value={form.username} onChange={change} error={errors.username} />
+        <Field label="Email" id="email" type="email" placeholder="alex@example.com" value={form.email} onChange={change} error={errors.email} />
+        <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Password" id="password" type="password" placeholder="8+ characters" value={form.password} onChange={change} error={errors.password} />
+            <Field label="Confirm password" id="confirmPassword" type="password" placeholder="Re-enter password" value={form.confirmPassword} onChange={change} error={errors.confirmPassword} />
+        </div>
+        <div>
+            <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-300">
+            <input type="checkbox" name="agree" checked={form.agree} onChange={change} className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-lime-400" />
+            <span>
+                I agree to the <a href="/terms" className="text-lime-400 hover:underline">Terms &amp; Conditions</a> and <a href="/privacy" className="text-lime-400 hover:underline">Privacy Policy</a>.
+            </span>
+            </label>
+            {errors.agree && <p className="mt-1 text-xs text-red-400">{errors.agree}</p>}
+        </div>
+        <button type="submit" className={"w-full rounded-lg bg-lime-400 py-3 font-bold text-black shadow-[0_0_20px_rgba(163,230,53,0.3)] transition hover:bg-lime-300 " + focus}>Create account</button>
+        <p className="text-center text-sm text-zinc-400">
+            Already have an account?{" "}
+            <button type="button" onClick={() => onSwitch("login")} className="font-semibold text-lime-400 hover:underline">Log in</button>
+        </p>
+        </form>
+    );
+}   
+
+/* ---------- Auth popup (login / register) ---------- */
+function AuthModal({ type, onClose, onSwitch }) {
+  useModalBehavior(onClose);
+  const isLogin = type === "login";
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-title"
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-zinc-950 shadow-2xl sm:rounded-3xl"
+      >
+        <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8">
+          <div>
+            <h2 id="auth-title" className="text-2xl font-bold tracking-tight">{isLogin ? "Welcome back" : "Create your account"}</h2>
+            <p className="mt-1 text-sm text-zinc-400">{isLogin ? "Log in to continue your training." : "Join FitGenie and start your first workout."}</p>
+          </div>
+          <button onClick={onClose} aria-label="Close" className={"grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 text-zinc-400 transition hover:text-white " + focus}>✕</button>
+        </div>
+        <div className="overflow-y-auto px-6 pb-7 pt-6 sm:px-8">
+          {isLogin ? <LoginForm key="login" onSwitch={onSwitch} /> : <RegisterForm key="register" onSwitch={onSwitch} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Page ---------- */
+function Landing() {
     const [menuOpen, setMenuOpen] = useState(false);
-    const [popup, setPopup] = useState(null); // "features" | "how" | "goals" | "pricing" | "faq" | null
+    // "features" | "how" | "goals" | "pricing" | "faq" | "login" | "register" | null
+    const [popup, setPopup] = useState(null);
 
     const open = (key) => {
         setMenuOpen(false);
@@ -235,8 +387,8 @@ function PopupBody({ type }) {
             </div>
 
             <div className="hidden items-center gap-3 md:flex">
-                <a href="/login" className={"rounded-xl px-4 py-2 text-sm text-zinc-300 transition hover:text-white " + focus}>Log in</a>
-                <a href="/register" className={"rounded-xl bg-lime-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-lime-300 " + focus}>Register</a>
+                <button onClick={() => open("login")} className={"rounded-xl px-4 py-2 text-sm text-zinc-300 transition hover:text-white " + focus}>Log in</button>
+                <button onClick={() => open("register")} className={"rounded-xl bg-lime-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-lime-300 " + focus}>Register</button>
             </div>
 
             <button
@@ -257,8 +409,8 @@ function PopupBody({ type }) {
                 ))}
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-3">
-                <a href="/login" className="rounded-xl border border-white/10 py-3 text-center text-sm">Log in</a>
-                <a href="/register" className="rounded-xl bg-lime-400 py-3 text-center text-sm font-semibold text-black">Register</a>
+                <button onClick={() => open("login")} className="rounded-xl border border-white/10 py-3 text-center text-sm">Log in</button>
+                <button onClick={() => open("register")} className="rounded-xl bg-lime-400 py-3 text-center text-sm font-semibold text-black">Register</button>
                 </div>
             </div>
             )}
@@ -283,40 +435,36 @@ function PopupBody({ type }) {
                     based on what you actually did.
                 </p>
                 <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                    <a href="/register" className={"rounded-2xl bg-lime-400 px-8 py-4 text-center font-bold text-black transition hover:bg-lime-300 " + focus}>
+                    <button onClick={() => open("register")} className={"rounded-2xl bg-lime-400 px-8 py-4 text-center font-bold text-black transition hover:bg-lime-300 " + focus}>
                     Create free account
-                    </a>
+                    </button>
                     <button onClick={() => open("how")} className={"rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-center font-semibold transition hover:bg-white/10 " + focus}>
                     See how it works
                     </button>
                 </div>
                 <p className="mt-5 text-sm text-zinc-500">
                     Already training with us?{" "}
-                    <a href="/login" className="text-lime-400 underline-offset-4 hover:underline">Log in</a>
+                    <button onClick={() => open("login")} className="text-lime-400 underline-offset-4 hover:underline">Log in</button>
                 </p>
-                <div className="flex flex-wrap items-center gap-3 mt-10">
+                <div className="mt-10 flex flex-wrap items-center gap-3">
                     {["TRANSFORM", "REBUILD", "STRENGTH"].map((item) => (
-                        <button
-                            key={item}
-                            className="px-6 py-3 rounded-full border border-lime-400/30 
-                            text-lime-400 text-sm font-bold tracking-wider
-                            hover:bg-lime-400 hover:text-black
-                            transition-all duration-300"
-                        >
-                            {item}
-                        </button>
+                    <button
+                        key={item}
+                        onClick={() => open("register")}
+                        className="rounded-full border border-lime-400/30 px-6 py-3 text-sm font-bold tracking-wider text-lime-400 transition-all duration-300 hover:bg-lime-400 hover:text-black"
+                    >
+                        {item}
+                    </button>
                     ))}
-
                 </div>
                 </div>
 
                 <div className="flex justify-center lg:justify-end">
-                <div>
                 <img
                     src="https://i.pinimg.com/736x/a2/83/ee/a283eef1cb9158de060d30b0c981cecd.jpg"
                     alt="Fitness"
-                    className="w-96 h-auto object-contain rounded-4xl opacity-35"/>
-                </div>
+                    className="h-auto w-96 rounded-4xl object-contain opacity-35"
+                />
                 </div>
             </div>
             </section>
@@ -329,8 +477,8 @@ function PopupBody({ type }) {
                 FitGenie was built by people who got tired of generic programs. Tell us your goal and we'll do the planning.
                 </p>
                 <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-                <a href="/register" className={"rounded-2xl bg-lime-400 px-8 py-4 font-bold text-black transition hover:bg-lime-300 " + focus}>Create free account</a>
-                <a href="/login" className={"rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-semibold transition hover:bg-white/10 " + focus}>Log in</a>
+                <button onClick={() => open("register")} className={"rounded-2xl bg-lime-400 px-8 py-4 font-bold text-black transition hover:bg-lime-300 " + focus}>Create free account</button>
+                <button onClick={() => open("login")} className={"rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-semibold transition hover:bg-white/10 " + focus}>Log in</button>
                 </div>
             </div>
             </section>
@@ -354,8 +502,8 @@ function PopupBody({ type }) {
             <div>
                 <h3 className="text-sm font-semibold">Account</h3>
                 <ul className="mt-4 space-y-3 text-sm text-zinc-500">
-                <li><a href="/login" className="transition hover:text-lime-400">Log in</a></li>
-                <li><a href="/register" className="transition hover:text-lime-400">Register</a></li>
+                <li><button onClick={() => open("login")} className="transition hover:text-lime-400">Log in</button></li>
+                <li><button onClick={() => open("register")} className="transition hover:text-lime-400">Register</button></li>
                 <li><a href="/forgot-password" className="transition hover:text-lime-400">Forgot password</a></li>
                 </ul>
             </div>
@@ -373,12 +521,12 @@ function PopupBody({ type }) {
             </p>
         </footer>
 
-        {/* POPUP */}
-        {popup && <Modal type={popup} onClose={() => setPopup(null)} onSwitch={setPopup} />}
-
-
+        {/* POPUPS: header and footer stay on the page behind them */}
+        {popup && (isAuth(popup)
+            ? <AuthModal type={popup} onClose={() => setPopup(null)} onSwitch={setPopup} />
+            : <Modal type={popup} onClose={() => setPopup(null)} onSwitch={setPopup} />)}
         </div>
     );
-    }
+}
 
 export default Landing;
