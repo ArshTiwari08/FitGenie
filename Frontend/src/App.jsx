@@ -1,10 +1,13 @@
-import React from "react";
-import Landing from "./Component/Landing ";
+import Header from "./Component/header";
+import Footer from "./Component/Footer";
+import { Outlet } from "react-router-dom";
 
 function App() {
   return (
     <>
-      <Landing/>
+      <Header />
+      <Outlet />
+      <Footer />
     </>
   );
 }
